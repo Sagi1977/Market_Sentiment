@@ -30,13 +30,13 @@ def get_ai_report(custom_prompt=None):
             for n in yf.Ticker(t).news[:2]:
                 title = n.get("title") or n.get("content", {}).get("title")
                 if title:
-                    news += f"- {title}\\n"
+                    news += f"- {title}\n"
         except Exception:
             continue
     prompt = custom_prompt if custom_prompt else (
-        f"ענה בעברית כמחלקת מחקר גולדמן סאקס. נתח: {news}\\n"
-        f"מבנה: ## דוח אסטרטגי\\n### 🏛️ 1. הכסף הגדול\\n"
-        f"### 💣 2. מוקשים ומאקרו\\n### 🌡️ 3. סנטימנט"
+        f"ענה בעברית כמחלקת מחקר גולדמן סאקס. נתח: {news}\n"
+        f"מבנה: ## דוח אסטרטגי\n### 🏛️ 1. הכסף הגדול\n"
+        f"### 💣 2. מוקשים ומאקרו\n### 🌡️ 3. סנטימנט"
     )
     try:
         client = genai.Client(api_key=GEMINI_KEY)
@@ -47,7 +47,7 @@ def get_ai_report(custom_prompt=None):
 
 def main():
     ai_report = get_ai_report()
-    send_msg(f"🤖 *Market Sentiment AI Report*\\n\\n{ai_report}")
+    send_msg(f"🤖 *Market Sentiment AI Report*\n\n{ai_report}")
 
 if __name__ == "__main__":
     main()
