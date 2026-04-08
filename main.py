@@ -1,48 +1,50 @@
+#!/usr/bin/env python3
 import os
-import time
-import requests
-import yfinance as yf
-from google import genai
+import sys
+print("=== FULL DEBUG ===")
+print(f"Python: {sys.version}")
+print(f"Args: {sys.argv}")
 
-print("=== DEBUG START ===")
+# Check env
+for key in ['TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID', 'GEMINI_API_KEY']:
+    val = os.environ.get(key, 'MISSING')
+    print(f"{key}: {'OK' if val and len(val)>10 else 'EMPTY'} ({len(val) if val else 0} chars)")
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-CHAT_ID = str(os.environ.get("TELEGRAM_CHAT_ID", ""))
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+# Test imports
+try:
+    import requests
+    print("✅ requests OK")
+except:
+    print("❌ requests FAILED")
+    sys.exit(1)
 
-print(f"TOKEN len: {len(TOKEN) if TOKEN else 0}")
-print(f"CHAT_ID: '{CHAT_ID}'")
-print(f"GEMINI_KEY len: {len(GEMINI_KEY) if GEMINI_KEY else 0}")
+try:
+    import yfinance as yf
+    print("✅ yfinance OK")
+except:
+    print("❌ yfinance FAILED")
+    sys.exit(1)
 
-if not TOKEN or not CHAT_ID:
-    print("❌ CRITICAL: Missing TELEGRAM_TOKEN or CHAT_ID")
-    exit(1)
+try:
+    from google import genai
+    print("✅ genai OK")
+except:
+    print("❌ genai FAILED")
+    sys.exit(1)
 
-if not GEMINI_KEY:
-    print("⚠️ WARNING: No GEMINI_KEY - using fallback")
-    ai_report = "TEST: No Gemini key, but Telegram should work"
-else:
-    print("🤖 Calling Gemini...")
-    try:
-        client = genai.Client(api_key=GEMINI_KEY)
-        response = client.models.generate_content("test").text
-        ai_report = f"🤖 Gemini OK: {response[:100]}"
-    except Exception as e:
-        print(f"Gemini error: {e}")
-        ai_report = "⚠️ Gemini failed"
-
-print(f"Report: {ai_report[:100]}")
+print("=== ALL IMPORTS OK ===")
 
 # Test Telegram
-BASE = f"https://api.telegram.org/bot{TOKEN}"
-try:
-    resp = requests.post(
-        f"{BASE}/sendMessage",
-        json={"chat_id": CHAT_ID, "text": f"🤖 *TEST* {ai_report}", "parse_mode": "Markdown"},
-        timeout=10
-    )
-    print(f"Telegram response: {resp.status_code} {resp.text}")
-except Exception as e:
-    print(f"Telegram error: {e}")
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+if TOKEN and CHAT_ID:
+    BASE = f"https://api.telegram.org/bot{TOKEN}"
+    try:
+        resp = requests.get(f"{BASE}/getMe", timeout=5)
+        print(f"Telegram bot info: {resp.status_code} {resp.json().get('ok', False)}")
+    except Exception as e:
+        print(f"Telegram test failed: {e}")
+else:
+    print("❌ Skipping Telegram test - missing TOKEN/CHAT_ID")
 
 print("=== DEBUG END ===")
