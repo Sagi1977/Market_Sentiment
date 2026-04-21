@@ -254,8 +254,7 @@ def build_message(data, market_score, details, compass_items, flow_items, compas
         lines.append(f"- {line}")
     lines.append("")
     lines.append(f"שורה תחתונה: {bottom_line(total_score, details, compass_score, flow_score)}")
-    return "
-".join(lines)
+    return "\n".join(lines)
 
 
 def send_telegram(text):
