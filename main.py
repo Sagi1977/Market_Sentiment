@@ -63,8 +63,9 @@ def load_analysts(path):
             "name": a.get("name", "Unknown"),
             "stance": stance,
             "weight": weight,
-            "comment": a.get("comment", ""),
-            "label": a.get("stance", "neutral"),
+            "label": a.get("stance", "neutral").lower(),
+            "angle_1": a.get("angle_1", ""),
+            "angle_2": a.get("angle_2", ""),
         }
         if group == "compass":
             compass.append(item)
@@ -182,11 +183,21 @@ def bucket_label(x):
     return "שלילי"
 
 
-def analyst_line(items):
-    if not items:
-        return "ללא נתונים"
-    parts = [f"{i['name']}: {i['label']}" for i in items]
-    return ", ".join(parts)
+def analyst_table(items):
+    lines = []
+    for i, a in enumerate(items, 1):
+        a1 = (a["angle_1"] or "").strip()
+        a2 = (a["angle_2"] or "").strip()
+        if a1 and a2:
+            comment = f"{a1} {a2}"
+        else:
+            comment = a1 or a2 or "ללא זווית מוגדרת"
+        lines.append(f"{i}. {a['name']} ({a['label']}): {comment}")
+    return lines if lines else ["אין נתוני אנליסטים"]
+
+
+def fmt_pct(x):
+    return "N/A" if x is None else f"{x:+.1f}%"
 
 
 def bottom_line(total_score, market_details, compass_score, flow_score):
@@ -194,7 +205,7 @@ def bottom_line(total_score, market_details, compass_score, flow_score):
     cr = market_details.get("crypto", 0.0)
     rp = market_details.get("risk_pressure", 0.0)
     if total_score >= 0.75:
-        return "התמונה הכללית חיובית. אפשר להחזיק הטיה שורית, אבל להעדיף חוזק מוכח ולא לרדוף אחרי מהלכים חדים מדי."
+        return "התמונה הכללית חיובית. אפשר לשמור bias שורי, אבל להעדיף חוזק מוכח ולא לרדוף אחרי מהלכים מתוחים מדי."
     if total_score >= 0.25:
         return "יש יתרון לשוורים, אך עדיין עדיף לפעול בצורה סלקטיבית ולתת עדיפות לנכסים שממשיכים להראות הובלה."
     if total_score > -0.25:
@@ -206,37 +217,45 @@ def bottom_line(total_score, market_details, compass_score, flow_score):
     return "התמונה הכללית זהירה עד שלילית. עדיף להתמקד בהגנה, סבלנות, ומעקב אחרי שיפור אמיתי בנתוני השוק."
 
 
-def fmt_pct(x):
-    return "N/A" if x is None else f"{x:+.1f}%"
-
-
 def build_message(data, market_score, details, compass_items, flow_items, compass_score, flow_score):
     total_score = market_score * 0.5 + compass_score * 0.25 + flow_score * 0.25
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines = []
-    lines.append("🧭 *Market Sentiment MVP*")
+    lines.append("Market Sentiment MVP")
     lines.append(f"זמן הרצה: {now}")
     lines.append("")
-    lines.append(f"*Regime:* {regime_label(total_score)}")
-    lines.append(f"*מניות:* {bucket_label(details.get('equities', 0.0))}")
-    lines.append(f"*קריפטו:* {bucket_label(details.get('crypto', 0.0))}")
-    lines.append(f"*לחץ סיכון:* {bucket_label(details.get('risk_pressure', 0.0))}")
-    lines.append(f"*Breadth:* {bucket_label(details.get('breadth', 0.0))}")
-    lines.append(f"*Compass:* {bucket_label(compass_score)}")
-    lines.append(f"*Flow:* {bucket_label(flow_score)}")
+    lines.append("[Snapshot]")
+    lines.append(f"Regime        : {regime_label(total_score)}")
+    lines.append(f"מניות         : {bucket_label(details.get('equities', 0.0))}")
+    lines.append(f"קריפטו        : {bucket_label(details.get('crypto', 0.0))}")
+    lines.append(f"סביבת סיכון   : {bucket_label(details.get('risk_pressure', 0.0))}")
+    lines.append(f"Breadth       : {bucket_label(details.get('breadth', 0.0))}")
+    lines.append(f"Compass       : {bucket_label(compass_score)}")
+    lines.append(f"Flow          : {bucket_label(flow_score)}")
     lines.append("")
-    lines.append("*שינויי שוק מרכזיים:*" )
-    for t in ["SPY", "QQQ", "IWM", "BTC-USD", "ETH-USD", "^VIX"]:
-        item = data.get(t)
+    lines.append("[שינויי שוק]")
+    rows = [
+        ("S&P 500", data.get("SPY")),
+        ("Nasdaq 100", data.get("QQQ")),
+        ("Russell 2000", data.get("IWM")),
+        ("Dow Jones", data.get("DIA")),
+        ("Bitcoin", data.get("BTC-USD")),
+        ("Ethereum", data.get("ETH-USD")),
+        ("VIX", data.get("^VIX")),
+    ]
+    for name, item in rows:
         if not item:
-            continue
-        lines.append(f"- {item['name']}: יום {fmt_pct(item['day_pct'])} | שבוע {fmt_pct(item['week_pct'])}")
+            lines.append(f"- {name:<12} | N/A")
+        else:
+            lines.append(f"- {name:<12} | Day {fmt_pct(item['day_pct']):>7} | Wk {fmt_pct(item['week_pct']):>7}")
     lines.append("")
-    lines.append(f"*Compass Analysts:* {analyst_line(compass_items)}")
-    lines.append(f"*Flow Analysts:* {analyst_line(flow_items)}")
+    lines.append("[Analyst Angle]")
+    for line in analyst_table(compass_items + flow_items):
+        lines.append(f"- {line}")
     lines.append("")
-    lines.append(f"*שורה תחתונה:* {bottom_line(total_score, details, compass_score, flow_score)}")
-    return "\n".join(lines)
+    lines.append(f"שורה תחתונה: {bottom_line(total_score, details, compass_score, flow_score)}")
+    return "
+".join(lines)
 
 
 def send_telegram(text):
@@ -246,7 +265,6 @@ def send_telegram(text):
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": text,
-        "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }
     r = requests.post(url, json=payload, timeout=20)
