@@ -1,0 +1,39 @@
+{
+  "analysts": [
+    {
+      "name": "Tom Lee",
+      "group": "compass",
+      "stance": "bullish",
+      "weight": 1.2,
+      "comment": "כיוון שוק חיובי, נוטה לראות המשך אפסייד"
+    },
+    {
+      "name": "Ed Yardeni",
+      "group": "compass",
+      "stance": "bullish",
+      "weight": 1.0,
+      "comment": "רקע מאקרו ושוק תומכים בתרחיש חיובי"
+    },
+    {
+      "name": "Mike Wilson",
+      "group": "flow",
+      "stance": "positive",
+      "weight": 1.1,
+      "comment": "שיפור ברוחב השוק והובלה רחבה יותר"
+    },
+    {
+      "name": "Matika",
+      "group": "flow",
+      "stance": "neutral",
+      "weight": 0.9,
+      "comment": "יש לעדכן ידנית לפי התרשמות עדכנית"
+    },
+    {
+      "name": "Daryanani",
+      "group": "flow",
+      "stance": "positive",
+      "weight": 1.0,
+      "comment": "תומך בתמונה של זרימת הון יחסית בריאה"
+    }
+  ]
+}
